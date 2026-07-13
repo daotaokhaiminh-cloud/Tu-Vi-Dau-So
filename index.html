@@ -885,6 +885,33 @@ capNhatTuDong();
 
 function nguHanhClass(el){ return {Kim:'kim',Hoa:'hoa',Moc:'moc',Tho:'tho',Thuy:'thuy'}[el]; }
 
+/* =========================================================
+   Kết nối Google Sheet (chạy khi trang được mở qua Apps Script Web App)
+   ========================================================= */
+function guiLenGoogleSheet(loai, extra){
+  try{
+    if (typeof google === 'undefined' || !google.script || !google.script.run) return; // không chạy trong Apps Script thì bỏ qua, không lỗi
+    const d = currentData;
+    if (!d) return;
+    const payload = Object.assign({
+      loai: loai,
+      hoTen: d.hoTen,
+      gioiTinh: gender==='nam' ? 'Nam' : 'Nữ',
+      ngaySinh: d.dd, thangSinh: d.mm, namSinh: d.yy,
+      gioDuong: document.getElementById('gioDuong').value,
+      gioChi: CHI[d.gioChiIdx],
+      amLich: document.getElementById('outAmLich').textContent,
+      namCanChi: document.getElementById('outNamCanChi').textContent,
+      tuoiAm: document.getElementById('outTuoiAm').textContent,
+      tuoiDuong: document.getElementById('outTuoiDuong').textContent,
+      trangThai: navigator.userAgent
+    }, extra||{});
+    google.script.run
+      .withFailureHandler(function(err){ console.warn('Không lưu được vào Google Sheet:', err); })
+      .luuDuLieuTuViVaoSheet(payload);
+  } catch(e){ console.warn('Lỗi khi gửi dữ liệu lên Google Sheet:', e); }
+}
+
 function xemLaSo(){
   const hoTen = document.getElementById('hoTen').value.trim() || '(Chưa nhập tên)';
   const {dd,mm,yy,gioChiIdx} = layNgayThangNam();
@@ -968,6 +995,8 @@ function xemLaSo(){
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+
+  guiLenGoogleSheet('Lập lá số');
 }
 
 function renderTongLuan(){
@@ -1374,6 +1403,7 @@ async function xuatPDF(){
 
   const hoTen = document.getElementById('pdfHoTen').value.trim() || currentData.hoTen;
   const sdt = document.getElementById('pdfSdt').value.trim();
+  guiLenGoogleSheet('Xuất PDF', { hoTen: hoTen, sdt: sdt });
   document.getElementById('phHoTen').textContent = 'Họ tên: ' + hoTen;
   document.getElementById('phSdt').textContent = sdt ? ('SĐT: ' + sdt) : '';
   document.getElementById('phDate').textContent = 'Ngày xuất: ' + new Date().toLocaleDateString('vi-VN');
